@@ -1,4 +1,6 @@
+from dataclasses import dataclass, replace, asdict
 from captcha.image import ImageCaptcha
+from typing import Optional
 import random
 import string
 import datetime
@@ -16,16 +18,24 @@ MONTHS = ("january", "february", "march", "april", "may", "june", "july", "augus
 ROMAN = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
 SPONSORS = ("shell", "pepsi", "starbucks")
 SYMBOLS = {s for s in ELEMENTS.values() if len(s) == 2}
-COUNTRIES = ['Aruba', 'Afghanistan', 'Angola', 'Anguilla', 'Åland Islands', 'Albania', 'Andorra', 'United Arab Emirates', 'Argentina', 'Armenia', 'American Samoa', 'Antarctica', 'French Southern Territories', 'Antigua and Barbuda', 'Australia', 'Austria', 'Azerbaijan', 'Burundi', 'Belgium', 'Benin', 'Bonaire, Sint Eustatius and Saba', 'Burkina Faso', 'Bangladesh', 'Bulgaria', 'Bahrain', 'Bahamas', 'Bosnia and Herzegovina', 'Saint Barthélemy', 'Belarus', 'Belize', 'Bermuda', 'Bolivia, Plurinational State of', 'Brazil', 'Barbados', 'Brunei Darussalam', 'Bhutan', 'Bouvet Island', 'Botswana', 'Central African Republic', 'Canada', 'Cocos (Keeling) Islands', 'Switzerland', 'Chile', 'China', "Côte d'Ivoire", 'Cameroon', 'Congo, The Democratic Republic of the', 'Congo', 'Cook Islands', 'Colombia', 'Comoros', 'Cabo Verde', 'Costa Rica', 'Cuba', 'Curaçao', 'Christmas Island', 'Cayman Islands', 'Cyprus', 'Czechia', 'Germany', 'Djibouti', 'Dominica', 'Denmark', 'Dominican Republic', 'Algeria', 'Ecuador', 'Egypt', 'Eritrea', 'Western Sahara', 'Spain', 'Estonia', 'Ethiopia', 'Finland', 'Fiji', 'Falkland Islands (Malvinas)', 'France', 'Faroe Islands', 'Micronesia, Federated States of', 'Gabon', 'United Kingdom', 'Georgia', 'Guernsey', 'Ghana', 'Gibraltar', 'Guinea', 'Guadeloupe', 'Gambia', 'Guinea-Bissau', 'Equatorial Guinea', 'Greece', 'Grenada', 'Greenland', 'Guatemala', 'French Guiana', 'Guam', 'Guyana', 'Hong Kong', 'Heard Island and McDonald Islands', 'Honduras', 'Croatia', 'Haiti', 'Hungary', 'Indonesia', 'Isle of Man', 'India', 'British Indian Ocean Territory', 'Ireland', 'Iran, Islamic Republic of', 'Iraq', 'Iceland', 'Israel', 'Italy', 'Jamaica', 'Jersey', 'Jordan', 'Japan', 'Kazakhstan', 'Kenya', 'Kyrgyzstan', 'Cambodia', 'Kiribati', 'Saint Kitts and Nevis', 'Korea, Republic of', 'Kuwait', "Lao People's Democratic Republic", 'Lebanon', 'Liberia', 'Libya', 'Saint Lucia', 'Liechtenstein', 'Sri Lanka', 'Lesotho', 'Lithuania', 'Luxembourg', 'Latvia', 'Macao', 'Saint Martin (French part)', 'Morocco', 'Monaco', 'Moldova, Republic of', 'Madagascar', 'Maldives', 'Mexico', 'Marshall Islands', 'North Macedonia', 'Mali', 'Malta', 'Myanmar', 'Montenegro', 'Mongolia', 'Northern Mariana Islands', 'Mozambique', 'Mauritania', 'Montserrat', 'Martinique', 'Mauritius', 'Malawi', 'Malaysia', 'Mayotte', 'Namibia', 'New Caledonia', 'Niger', 'Norfolk Island', 'Nigeria', 'Nicaragua', 'Niue', 'Netherlands', 'Norway', 'Nepal', 'Nauru', 'New Zealand', 'Oman', 'Pakistan', 'Panama', 'Pitcairn', 'Peru', 'Philippines', 'Palau', 'Papua New Guinea', 'Poland', 'Puerto Rico', "Korea, Democratic People's Republic of", 'Portugal', 'Paraguay', 'Palestine, State of', 'French Polynesia', 'Qatar', 'Réunion', 'Romania', 'Russian Federation', 'Rwanda', 'Saudi Arabia', 'Sudan', 'Senegal', 'Singapore', 'South Georgia and the South Sandwich Islands', 'Saint Helena, Ascension and Tristan da Cunha', 'Svalbard and Jan Mayen', 'Solomon Islands', 'Sierra Leone', 'El Salvador', 'San Marino', 'Somalia', 'Saint Pierre and Miquelon', 'Serbia', 'South Sudan', 'Sao Tome and Principe', 'Suriname', 'Slovakia', 'Slovenia', 'Sweden', 'Eswatini', 'Sint Maarten (Dutch part)', 'Seychelles', 'Syrian Arab Republic', 'Turks and Caicos Islands', 'Chad', 'Togo', 'Thailand', 'Tajikistan', 'Tokelau', 'Turkmenistan', 'Timor-Leste', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Türkiye', 'Tuvalu', 'Taiwan, Province of China', 'Tanzania, United Republic of', 'Uganda', 'Ukraine', 'United States Minor Outlying Islands', 'Uruguay', 'United States', 'Uzbekistan', 'Holy See (Vatican City State)', 'Saint Vincent and the Grenadines', 'Venezuela, Bolivarian Republic of', 'Virgin Islands, British', 'Virgin Islands, U.S.', 'Viet Nam', 'Vanuatu', 'Wallis and Futuna', 'Samoa', 'Yemen', 'South Africa', 'Zambia', 'Zimbabwe']
+COUNTRIES = ['aruba', 'afghanistan', 'angola', 'anguilla', 'åland islands', 'albania', 'andorra', 'united arab emirates', 'argentina', 'armenia', 'american samoa', 'antarctica', 'french southern territories', 'antigua and barbuda', 'australia', 'austria', 'azerbaijan', 'burundi', 'belgium', 'benin', 'bonaire, sint eustatius and saba', 'burkina faso', 'bangladesh', 'bulgaria', 'bahrain', 'bahamas', 'bosnia and herzegovina', 'saint barthélemy', 'belarus', 'belize', 'bermuda', 'bolivia, plurinational state of', 'brazil', 'barbados', 'brunei darussalam', 'bhutan', 'bouvet island', 'botswana', 'central african republic', 'canada', 'cocos (keeling) islands', 'switzerland', 'chile', 'china', "côte d'ivoire", 'cameroon', 'congo, the democratic republic of the', 'congo', 'cook islands', 'colombia', 'comoros', 'cabo verde', 'costa rica', 'cuba', 'curaçao', 'christmas island', 'cayman islands', 'cyprus', 'czechia', 'germany', 'djibouti', 'dominica', 'denmark', 'dominican republic', 'algeria', 'ecuador', 'egypt', 'eritrea', 'western sahara', 'spain', 'estonia', 'ethiopia', 'finland', 'fiji', 'falkland islands (malvinas)', 'france', 'faroe islands', 'micronesia, federated states of', 'gabon', 'united kingdom', 'georgia', 'guernsey', 'ghana', 'gibraltar', 'guinea', 'guadeloupe', 'gambia', 'guinea-bissau', 'equatorial guinea', 'greece', 'grenada', 'greenland', 'guatemala', 'french guiana', 'guam', 'guyana', 'hong kong', 'heard island and mcdonald islands', 'honduras', 'croatia', 'haiti', 'hungary', 'indonesia', 'isle of man', 'india', 'british indian ocean territory', 'ireland', 'iran, islamic republic of', 'iraq', 'iceland', 'israel', 'italy', 'jamaica', 'jersey', 'jordan', 'japan', 'kazakhstan', 'kenya', 'kyrgyzstan', 'cambodia', 'kiribati', 'saint kitts and nevis', 'korea, republic of', 'kuwait', "lao people's democratic republic", 'lebanon', 'liberia', 'libya', 'saint lucia', 'liechtenstein', 'sri lanka', 'lesotho', 'lithuania', 'luxembourg', 'latvia', 'macao', 'saint martin (french part)', 'morocco', 'monaco', 'moldova, republic of', 'madagascar', 'maldives', 'mexico', 'marshall islands', 'north macedonia', 'mali', 'malta', 'myanmar', 'montenegro', 'mongolia', 'northern mariana islands', 'mozambique', 'mauritania', 'montserrat', 'martinique', 'mauritius', 'malawi', 'malaysia', 'mayotte', 'namibia', 'new caledonia', 'niger', 'norfolk island', 'nigeria', 'nicaragua', 'niue', 'netherlands', 'norway', 'nepal', 'nauru', 'new zealand', 'oman', 'pakistan', 'panama', 'pitcairn', 'peru', 'philippines', 'palau', 'papua new guinea', 'poland', 'puerto rico', "korea, democratic people's republic of", 'portugal', 'paraguay', 'palestine, state of', 'french polynesia', 'qatar', 'réunion', 'romania', 'russian federation', 'rwanda', 'saudi arabia', 'sudan', 'senegal', 'singapore', 'south georgia and the south sandwich islands', 'saint helena, ascension and tristan da cunha', 'svalbard and jan mayen', 'solomon islands', 'sierra leone', 'el salvador', 'san marino', 'somalia', 'saint pierre and miquelon', 'serbia', 'south sudan', 'sao tome and principe', 'suriname', 'slovakia', 'slovenia', 'sweden', 'eswatini', 'sint maarten (dutch part)', 'seychelles', 'syrian arab republic', 'turks and caicos islands', 'chad', 'togo', 'thailand', 'tajikistan', 'tokelau', 'turkmenistan', 'timor-leste', 'tonga', 'trinidad and tobago', 'tunisia', 'türkiye', 'tuvalu', 'taiwan, province of china', 'tanzania, united republic of', 'uganda', 'ukraine', 'united states minor outlying islands', 'uruguay', 'united states', 'uzbekistan', 'holy see (vatican city state)', 'saint vincent and the grenadines', 'venezuela, bolivarian republic of', 'virgin islands, british', 'virgin islands, u.s.', 'viet nam', 'vanuatu', 'wallis and futuna', 'samoa', 'yemen', 'south africa', 'zambia', 'zimbabwe']
+@dataclass(frozen=True)
+class Ctx:
+    captcha: str = ""
+    wordle: str = ""
+    moon: str = ""
+    country: str = ""
+    sender: str = ""
+    sent_at: Optional[datetime.datetime] = None
+    message_id: str = ""
+    subject: str = ""
+
 
 def rule1(x, ctx):
-    if len(x) >= 5:
-        return True
-    else:
-        return False
+    return len(x) >= 5
 
 def rule2(x, ctx):
-    return any(char.isnumeric() for char in x)
+    return any(char.isdecimal() for char in x)
 
 def rule3(x, ctx):
     return any(char.isupper() for char in x)
@@ -34,13 +44,7 @@ def rule4(x, ctx):
     return any(not char.isalnum() and not char.isspace() for char in x)
 
 def rule5(x, ctx):
-    digits = []
-    for char in x:
-        if rule2(char):
-            digits.append(int(char))
-    if sum(digits) == 25:
-        return True
-    else: return False
+    return sum(int(c) for c in x if c.isdecimal()) == 25
 
 def rule6(x, ctx):
     return any(m in x.lower() for m in MONTHS)
@@ -75,8 +79,8 @@ def genCaptcha():
     image.write(txt, "out.png")
     return txt
 
-def rule10(x, txt):
-    return txt in x
+def rule10(x, ctx):
+    return ctx.captcha in x
 
 def todaysWordle(): 
     date = datetime.date.today()
@@ -85,22 +89,24 @@ def todaysWordle():
     wordle = response['solution']
     return wordle
 
-def rule11(x, wordle):
-    return wordle in x
+def rule11(x, ctx):
+    return ctx.wordle in x
 
 def rule12(x, ctx):
     return any(s in x for s in SYMBOLS)
 
+def getMoon():
+    return requests.get("https://api.apiverve.com/v1/moonphases?today=true", headers={"x-api-key": os.getenv("API-KEY")}).json()["data"]["phaseEmoji"]
+
 def rule13(x, ctx):
-    MOONPHASE = requests.get("https://api.apiverve.com/v1/moonphases?today=true", headers={"x-api-key": os.getenv("API-KEY")}).json()["data"]["phaseEmoji"]
-    return MOONPHASE in x
+    return ctx.moon in x
 
 def randomCoutry():
     country = random.choice(COUNTRIES)
     return country
 
-def rule14(x, country):
-    return country in x
+def rule14(x, ctx):
+    return ctx.country in x.lower()
 
 def isLeap(year):
     return (year % 4 == 0 and year % 100 != 0) or year % 400 == 0
@@ -112,44 +118,78 @@ def rule15(x, ctx):
             return True
     return False
 
-txt = "1234"
+def turn(rules):
+    unlocked = 1 
 
-def turn():
-    unlocked = 1
-
-    captcha = genCaptcha()
-    wordle = todaysWordle()
-    country = randomCoutry()
-
-    rules = [
-        (rule1,  None,    "Your password must be at least 5 characters."),
-        (rule2,  None,    "Your password must include a number."),
-        (rule3,  None,    "Your password must include an uppercase letter."),
-        (rule4,  None,    "Your password must include a special character."),
-        (rule5,  None,    "The digits in your password must add up to 25."),
-        (rule6,  None,    "Your password must include a month of the year."),
-        (rule7,  None,    "Your password must include a roman numeral."),
-        (rule8,  None,    "Your password must include one of our sponsors(wish they actually sponsored me lol): (Pepsi, Starbucks, Shell)"),
-        (rule9,  None,    "The roman numerals in your password should multiply to 25."),
-        (rule10, captcha, "Your password must include this CAPTCHA"),
-        (rule11, wordle,  "Your password must include today’s Wordle answer."),
-        (rule12, None,    "Your password must include a two letter symbol from the periodic table."),
-        (rule13, None,    "Your password must include the current phase of the moon as an emoji"),
-        (rule14, country, "Your password must include the name of this country. (randomly generated)"),
-        (rule15, None,    "Your password must include a leap year.")
-    ] 
-
-    def submit(pswd):
+    def submit(pswd, ctx):
         nonlocal unlocked
         while True:
-            results = [(txt, fn(pswd, ctx)) for fn, ctx, txt in rules[:unlocked]]
-            failed = any(not ok for _, ok in results)
+            results = [(msg, hint, fn(pswd, ctx)) for fn, hint, msg in rules[:unlocked]]
+            failed = not all(ok for _, _, ok in results)
             if failed or unlocked == len(rules):
                 break
             unlocked += 1
-            won = not failed and unlocked == len(rules)
-        return results, unlocked, won
+        won = not failed and unlocked == len(rules)
+        return results, unlocked, won       
     return submit
+
+def main():
+    base = Ctx(
+    captcha = genCaptcha(),
+    wordle = todaysWordle(),
+    country = randomCoutry(),
+    moon = getMoon()
+    )
+
+    rules = [
+        (rule1,  None,                                  "Your password must be at least 5 characters."),
+        (rule2,  None,                                  "Your password must include a number."),
+        (rule3,  None,                                  "Your password must include an uppercase letter."),
+        (rule4,  None,                                  "Your password must include a special character."),
+        (rule5,  None,                                  "The digits in your password must add up to 25."),
+        (rule6,  None,                                  "Your password must include a month of the year."),
+        (rule7,  None,                                  "Your password must include a roman numeral."),
+        (rule8,  None,                                  "Your password must include one of our sponsors(wish they actually sponsored me lol): (Pepsi, Starbucks, Shell)"),
+        (rule9,  None,                                  "The roman numerals in your password should multiply to 25."),
+        (rule10, "auto generated captcha(attached!)",   "Your password must include this CAPTCHA"),
+        (rule11, "Today's wordle answer!",              "Your password must include today's Wordle answer."),
+        (rule12, None,                                  "Your password must include a two letter symbol from the periodic table."),
+        (rule13, "The current moon phase as an emoji!", "Your password must include the current phase of the moon as an emoji"),
+        (rule14, "This random country \"{country}\"",   "Your password must include the name of this country. (randomly generated)"),
+        (rule15, None,                                  "Your password must include a leap year.")
+    ]
+
+    game = turn(rules)
+    print("Start!!!!")
+
+    while True:
+        try:
+            pswd = input("Password: ")
+        except KeyboardInterrupt:
+            print("\nbaibaii!!")
+            break
+        if not pswd:
+            continue
+
+        ctx = replace(
+                    base,
+                    sender = "me@test",
+                    sent_at = datetime.datetime.now(),
+                    message_id = f"<{random.randrange(10**8)}@test>",
+                    subject = "password"
+                )
+
+        results, unlocked, won = game(pswd, ctx)
+
+        for msg, hint, ok in results:
+            print("🟩" if ok else "🟥", msg)
+            if hint:
+                print(hint.format(**asdict(ctx)))
+        print()
+
+        if won:
+            print("You won!!!!!")
+            break
+
 if __name__ == "__main__":
-    game = turn()
-    print(game("hihih9I7i9"))
+    main()
